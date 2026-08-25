@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "python -m loop_breaker.cursor_hook"
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "python -m loop_breaker.cursor_hook"
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "python -m loop_breaker.cursor_hook",
+        "matcher": "Shell"
+      }
+    ],
+    "afterShellExecution": [
+      {
+        "command": "python -m loop_breaker.cursor_hook"
+      }
+    ],
+    "postToolUseFailure": [
+      {
+        "command": "python -m loop_breaker.cursor_hook"
+      }
+    ],
+    "stop": [
+      {
+        "command": "python -m loop_breaker.cursor_hook",
+        "loop_limit": 3
+      }
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+# Bytecode & caches
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# LoopBreaker runtime state
+.loopbreaker/
+
+# Build & packaging
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local extract / scratch
+_zip_extract/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+.env.*
+*.pem
+credentials.json
+
+# Netlify (if used later)
+.netlify/

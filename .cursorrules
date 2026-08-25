@@ -1,0 +1,25 @@
+# LoopBreaker Project & Audit Rules for Cursor AI
+
+## Objective
+You are auditing the **LoopBreaker (AI Agent Doom Loop Sentinel & State Rollback Engine)**.
+Your goal is to independently run all test suites, audit the benchmark results, and output an official approval report.
+
+## How to Test & Verify
+1. **Run Unit & Matrix Test Suites:**
+   ```bash
+   python -m unittest discover -s tests -v
+   ```
+2. **Run 100-Trajectory Empirical Benchmark:**
+   ```bash
+   python benchmark_100_trajectories.py
+   ```
+3. **Run One-Click Automated Cursor Audit:**
+   ```bash
+   python cursor_verify.py
+   ```
+
+## Architecture Overview
+- `loop_breaker/detector.py`: Multi-strategy cycle detection (Ping-Pong, Graph Cycles, Exact Repetition, Fuzzy Evasion, Tool Failures).
+- `loop_breaker/state_manager.py`: Lightweight shadow workspace state tree with zero-copy string memory sharing.
+- `loop_breaker/fast_stat_cache.py`: Fast-path mtime stat cache avoiding unnecessary disk I/O.
+- `loop_breaker/sentinel.py`: Top-level orchestrator with automated circuit breaker rollbacks.
