@@ -4,7 +4,6 @@
 
 > Search terms this solves: *cursor agent stuck in loop*, *ai coding agent doom loop*, *cursor infinite fix loop*, *agent rollback*, *cursor hooks middleware*.
 
-[![Tests](https://github.com/Frt682/loop-breaker/actions/workflows/tests.yml/badge.svg)](https://github.com/Frt682/loop-breaker/actions/workflows/tests.yml)
 [![Tests](https://img.shields.io/badge/tests-40%20passing-brightgreen)](#running-tests)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](#installation)
 [![Cursor Hooks](https://img.shields.io/badge/Cursor-hooks%20ready-purple)](#cursor-integration-1-command)
