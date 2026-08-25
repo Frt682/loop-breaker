@@ -6,7 +6,7 @@ from .detector import DoomLoopDetector
 from .state_manager import StateManager
 from .sentinel import LoopBreakerSentinel
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __all__ = [
     "LoopBreakerSentinel",
     "DoomLoopDetector",

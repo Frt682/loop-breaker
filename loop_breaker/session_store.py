@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .models import Checkpoint, StepRecord
 from .sentinel import LoopBreakerSentinel
+from .config import load_config
 
 STATE_DIR_NAME = ".loopbreaker"
 
@@ -33,7 +34,10 @@ class SessionStore:
                 data = json.load(handle)
             return _deserialize_sentinel(self.workspace_path, data), _load_meta(data)
 
-        sentinel = LoopBreakerSentinel(self.workspace_path)
+        sentinel = LoopBreakerSentinel(
+            self.workspace_path,
+            rollback_mode=load_config(self.workspace_path)["mode"],
+        )
         sentinel.initialize("LoopBreaker baseline (Cursor)")
         meta = _default_meta()
         self.save(sentinel, meta)
@@ -43,7 +47,10 @@ class SessionStore:
         if os.path.exists(self.session_path):
             os.remove(self.session_path)
 
-        sentinel = LoopBreakerSentinel(self.workspace_path)
+        sentinel = LoopBreakerSentinel(
+            self.workspace_path,
+            rollback_mode=load_config(self.workspace_path)["mode"],
+        )
         sentinel.initialize("LoopBreaker baseline (new Cursor session)")
         meta = _default_meta()
         self.save(sentinel, meta)
@@ -92,7 +99,8 @@ def _serialize_sentinel(sentinel: LoopBreakerSentinel) -> Dict[str, Any]:
 
 
 def _deserialize_sentinel(workspace_path: str, data: Dict[str, Any]) -> LoopBreakerSentinel:
-    sentinel = LoopBreakerSentinel(workspace_path)
+    config = load_config(workspace_path)
+    sentinel = LoopBreakerSentinel(workspace_path, rollback_mode=config["mode"])
     sentinel.step_counter = data.get("step_counter", 0)
     sentinel.total_rollbacks = data.get("total_rollbacks", 0)
     sentinel.interceptions = data.get("interceptions", [])

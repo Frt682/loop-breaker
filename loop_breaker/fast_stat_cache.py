@@ -26,7 +26,8 @@ class FastStatCache:
         }
         self.ignored_dirs = ignored_dirs or {
             ".git", "node_modules", "__pycache__", ".venv", "venv", "dist",
-            "build", ".pytest_cache", ".next", "target", ".idea", ".vscode"
+            "build", ".pytest_cache", ".next", "target", ".idea", ".vscode",
+            ".loopbreaker",
         }
         self._cache: Dict[str, FileMetadata] = {}
         self._tracked_paths: Dict[str, str] = {}  # rel_path -> full_path

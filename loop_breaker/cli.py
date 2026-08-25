@@ -5,7 +5,7 @@ import argparse
 import json
 import sys
 
-from loop_breaker.install_cursor import install_cursor_hooks
+from loop_breaker.install_cursor import install_cursor_hooks, uninstall_cursor_hooks
 from loop_breaker.sentinel import LoopBreakerSentinel
 
 
@@ -29,10 +29,25 @@ def main() -> None:
         "--workspace", "-w", default=".", help="Project folder to install into"
     )
     install_parser.add_argument(
+        "--mode",
+        choices=["warn", "restore", "full"],
+        default="warn",
+        help="warn=detect only (default, safe); restore=rollback changed files; full=also delete new files",
+    )
+    install_parser.add_argument(
         "--global",
         dest="global_install",
         action="store_true",
         help="Install into ~/.cursor/hooks.json for all projects",
+    )
+
+    uninstall_parser = subparsers.add_parser("uninstall", help="Remove LoopBreaker Cursor hooks")
+    uninstall_parser.add_argument("--workspace", "-w", default=".", help="Project folder")
+    uninstall_parser.add_argument(
+        "--global",
+        dest="global_install",
+        action="store_true",
+        help="Remove from ~/.cursor/hooks.json",
     )
 
     status_parser = subparsers.add_parser("status", help="Show session stats from .loopbreaker/")
@@ -44,11 +59,23 @@ def main() -> None:
         hooks_path = install_cursor_hooks(
             args.workspace,
             global_install=args.global_install,
+            mode=args.mode,
         )
         scope = "global (~/.cursor)" if args.global_install else args.workspace
         print(f"[OK] LoopBreaker Cursor hooks installed ({scope})")
+        print(f"     Mode: {args.mode}")
         print(f"     Config: {hooks_path}")
-        print("     Restart Cursor, then use Agent mode in any project.")
+        print("     Restart Cursor, then use Agent mode.")
+        if args.mode == "warn":
+            print("     Safe default: detects loops and warns — does not modify files.")
+        return
+
+    if args.command == "uninstall":
+        hooks_path = uninstall_cursor_hooks(
+            args.workspace,
+            global_install=args.global_install,
+        )
+        print(f"[OK] LoopBreaker hooks removed from {hooks_path}")
         return
 
     if args.command == "status":

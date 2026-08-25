@@ -8,6 +8,7 @@ import hashlib
 from typing import Dict, List, Optional, Set
 from .models import Checkpoint
 from .fast_stat_cache import FastStatCache
+from .paths import resolve_workspace_path, sanitize_relative_paths
 
 class StateManager:
     def __init__(self, workspace_path: str, file_extensions: Optional[Set[str]] = None, ignored_dirs: Optional[Set[str]] = None):
@@ -35,6 +36,8 @@ class StateManager:
         modified_files: Optional[List[str]] = None
     ) -> Checkpoint:
         """Creates and stores a new lightweight workspace checkpoint."""
+        if modified_files:
+            modified_files = sanitize_relative_paths(self.workspace_path, modified_files)
         snapshot = self.capture_snapshot(modified_files=modified_files)
         
         # Fast 64-bit snapshot ID
@@ -75,10 +78,13 @@ class StateManager:
             return self.checkpoints[self.checkpoint_history[0]]
         return None
 
-    def rollback_to(self, checkpoint_id: str) -> Dict[str, str]:
+    def rollback_to(self, checkpoint_id: str, delete_extraneous: bool = False) -> Dict[str, str]:
         """
         Rolls back workspace files to the exact state in the specified checkpoint.
         Only modifies files that actually differ from target checkpoint (Delta I/O).
+
+        By default extraneous files created during a loop are NOT deleted.
+        Pass delete_extraneous=True only when you explicitly want destructive cleanup.
         """
         if checkpoint_id not in self.checkpoints:
             raise ValueError(f"Checkpoint {checkpoint_id} not found in state tree.")
@@ -90,23 +96,26 @@ class StateManager:
         # 1. Restore / overwrite modified or missing files
         for rel_path, target_content in target_checkpoint.files_snapshot.items():
             current_content = current_snapshot.get(rel_path)
-            
+
             if current_content is None or current_content != target_content:
-                full_path = os.path.join(self.workspace_path, rel_path.replace("/", os.sep))
+                full_path = resolve_workspace_path(self.workspace_path, rel_path)
+                if full_path is None:
+                    continue
                 os.makedirs(os.path.dirname(full_path), exist_ok=True)
                 with open(full_path, "w", encoding="utf-8", newline="") as f:
                     f.write(target_content)
                 actions[rel_path] = "restored"
 
-        # 2. Delete extraneous files created during the failed loop
-        for rel_path in current_snapshot:
-            if rel_path not in target_checkpoint.files_snapshot:
-                full_path = os.path.join(self.workspace_path, rel_path.replace("/", os.sep))
-                if os.path.exists(full_path):
+        if delete_extraneous:
+            for rel_path in current_snapshot:
+                if rel_path not in target_checkpoint.files_snapshot:
+                    full_path = resolve_workspace_path(self.workspace_path, rel_path)
+                    if full_path is None or not os.path.exists(full_path):
+                        continue
                     try:
                         os.remove(full_path)
                         actions[rel_path] = "deleted_extraneous"
-                    except Exception:
+                    except OSError:
                         pass
 
         # Invalidate stat cache to reflect rollbacked files

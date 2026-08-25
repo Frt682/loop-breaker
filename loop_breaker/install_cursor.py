@@ -7,6 +7,8 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
+from .config import write_config
+
 
 HOOK_EVENTS = (
     "sessionStart",
@@ -54,7 +56,11 @@ def merge_hooks(existing: Dict[str, Any], new_hooks: Dict[str, Any]) -> Dict[str
     return merged
 
 
-def install_cursor_hooks(target_dir: str, global_install: bool = False) -> Path:
+def install_cursor_hooks(
+    target_dir: str,
+    global_install: bool = False,
+    mode: str = "warn",
+) -> Path:
     target = Path(target_dir).resolve()
     if global_install:
         cursor_dir = Path.home() / ".cursor"
@@ -78,6 +84,43 @@ def install_cursor_hooks(target_dir: str, global_install: bool = False) -> Path:
 
     if not global_install:
         _ensure_gitignore_entry(target, ".loopbreaker/")
+        write_config(str(target), mode=mode)
+
+    return hooks_path
+
+
+def uninstall_cursor_hooks(target_dir: str, global_install: bool = False) -> Path:
+    target = Path(target_dir).resolve()
+    cursor_dir = Path.home() / ".cursor" if global_install else target / ".cursor"
+    hooks_path = cursor_dir / "hooks.json"
+
+    if not hooks_path.exists():
+        return hooks_path
+
+    with open(hooks_path, encoding="utf-8") as handle:
+        config = json.load(handle)
+
+    lb_marker = "loop_breaker.cursor_hook"
+    hooks = config.get("hooks", {})
+    changed = False
+
+    for event, entries in list(hooks.items()):
+        filtered = [
+            entry for entry in entries
+            if lb_marker not in str(entry.get("command", ""))
+        ]
+        if len(filtered) != len(entries):
+            changed = True
+        if filtered:
+            hooks[event] = filtered
+        else:
+            hooks.pop(event, None)
+
+    if changed:
+        config["hooks"] = hooks
+        with open(hooks_path, "w", encoding="utf-8") as handle:
+            json.dump(config, handle, indent=2)
+            handle.write("\n")
 
     return hooks_path
 

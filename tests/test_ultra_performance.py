@@ -91,7 +91,7 @@ class TestFastStatCacheAndZeroBloat(unittest.TestCase):
 class TestExtremeThroughputBenchmark(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.mkdtemp(prefix="thru_bench_")
-        self.sentinel = LoopBreakerSentinel(self.test_dir)
+        self.sentinel = LoopBreakerSentinel(self.test_dir, rollback_mode="full")
         self.sentinel.initialize("Throughput Baseline")
 
     def tearDown(self):

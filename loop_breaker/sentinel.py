@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Any
 from .models import Checkpoint, StepRecord, DetectionReport, SentinelDecision, LoopType
 from .state_manager import StateManager
 from .detector import DoomLoopDetector
+from .paths import sanitize_relative_paths
 
 class LoopBreakerSentinel:
     def __init__(
@@ -16,9 +17,13 @@ class LoopBreakerSentinel:
         repetition_threshold: int = 3,
         oscillation_threshold: int = 2,
         window_size: int = 8,
-        cost_per_step_estimate_cents: float = 4.5  # average agent step cost ~$0.045
+        cost_per_step_estimate_cents: float = 4.5,  # average agent step cost ~$0.045
+        rollback_mode: str = "warn",
     ):
+        if rollback_mode not in ("warn", "restore", "full"):
+            raise ValueError("rollback_mode must be one of: warn, restore, full")
         self.workspace_path = workspace_path
+        self.rollback_mode = rollback_mode
         self.state_manager = StateManager(workspace_path)
         self.detector = DoomLoopDetector(
             repetition_threshold=repetition_threshold,
@@ -59,7 +64,7 @@ class LoopBreakerSentinel:
         4. Triggers automatic rollback if circuit breaker is breached.
         """
         self.step_counter += 1
-        modified_files = modified_files or []
+        modified_files = sanitize_relative_paths(self.workspace_path, modified_files or [])
 
         # 1. Normalize errors
         norm_error, sig_hash = self.detector.normalize_error(raw_terminal_output)
@@ -98,9 +103,18 @@ class LoopBreakerSentinel:
             return report
 
         # 4. Handle Circuit Breaker & Automatic Rollback
+        if self.rollback_mode == "warn":
+            report.decision = SentinelDecision.WARN
+            report.metadata["rollback_skipped"] = True
+            report.metadata["rollback_mode"] = self.rollback_mode
+            return report
+
         target_checkpoint = self.state_manager.get_last_healthy_checkpoint()
         if target_checkpoint:
-            rollback_actions = self.state_manager.rollback_to(target_checkpoint.checkpoint_id)
+            rollback_actions = self.state_manager.rollback_to(
+                target_checkpoint.checkpoint_id,
+                delete_extraneous=(self.rollback_mode == "full"),
+            )
             self.total_rollbacks += 1
             report.rollback_target_checkpoint_id = target_checkpoint.checkpoint_id
 

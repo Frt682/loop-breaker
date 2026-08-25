@@ -118,7 +118,7 @@ class TestDeepWorkspaceRollbackIntegrity(unittest.TestCase):
                 f.write(f"# Hallucinated file {i}\n")
 
         # 3. Trigger atomic rollback to baseline
-        actions = self.state_mgr.rollback_to(baseline.checkpoint_id)
+        actions = self.state_mgr.rollback_to(baseline.checkpoint_id, delete_extraneous=True)
 
         # 4. Rigorous verification: Every single original file must match initial SHA-256 exactly
         for rel_path, expected_hash in self.original_hashes.items():
@@ -256,7 +256,7 @@ class TestFuzzySemanticRenamingResistance(unittest.TestCase):
 class TestPerformanceAndThroughputBenchmark(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.mkdtemp(prefix="perf_bench_")
-        self.sentinel = LoopBreakerSentinel(self.test_dir)
+        self.sentinel = LoopBreakerSentinel(self.test_dir, rollback_mode="full")
         self.sentinel.initialize("Perf Baseline")
 
     def tearDown(self):

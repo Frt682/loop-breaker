@@ -109,6 +109,11 @@ def _report_to_response(report, meta: Dict[str, Any]) -> Dict[str, Any]:
         response["additional_context"] = report.steering_prompt_for_agent
     elif report.decision == SentinelDecision.WARN and report.steering_prompt_for_agent:
         meta["steering_prompt"] = report.steering_prompt_for_agent
+        if report.metadata.get("rollback_skipped"):
+            meta["user_message"] = (
+                f"LoopBreaker detected a loop ({report.loop_type.value}) — "
+                "warn-only mode, no files changed."
+            )
         response["additional_context"] = report.steering_prompt_for_agent
     return response
 
